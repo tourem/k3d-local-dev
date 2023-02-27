@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: schema-registry
+  namespace: kafka
+  labels:
+    app: schema-registry
+spec:
+  selector:
+    app: schema-registry
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: "8081"
+    - port: 8083
+      targetPort: 8083
+      name: "8083"
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-registry
+  namespace: kafka
+spec:
+  selector:
+    matchLabels:
+      app: schema-registry
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: schema-registry
+    spec:
+      volumes:
+        - name: auth-config
+          configMap:
+            name: jaas-conf
+            items:
+            - key: jaas_config.conf
+              path: jaas_config.conf
+            - key: login.properties
+              path: login.properties
+        - name: broker-jaas-conf
+          configMap:
+            name: jaas-conf
+            items:
+            - key: sr_jaas.conf
+              path: sr_jaas.conf
+        - name: cert-creds
+          configMap:
+            name: jaas-conf
+            items:
+            - key: cert_creds
+              path: cert_creds
+        - name: ssl-secrets-schema-registry
+          secret:
+            secretName: ssl-cert
+            items:
+            - key: schema-registry.server.keystore.jks
+              path: schema-registry.server.keystore.jks
+            - key: schema-registry.server.truststore.jks
+              path: schema-registry.server.truststore.jks
+      containers:
+        - name: schema-registry
+          image: k3d-dev-app-registry:5050/confluentinc/cp-schema-registry:6.2.0
+          env:
+            - name: SCHEMA_REGISTRY_HOST_NAME
+              value: schema-registry
+            - name: SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL
+              value: zookeeper:2181
+            - name: SCHEMA_REGISTRY_SCHEMA_REGISTRY_INTER_INSTANCE_PROTOCOL
+              value: "https"
+            - name: SCHEMA_REGISTRY_SSL_CLIENT_AUTH
+              value: "true"
+            - name: SCHEMA_REGISTRY_SSL_KEY_PASSWORD
+              value: "changeit"
+            - name: SCHEMA_REGISTRY_SSL_KEYSTORE_PASSWORD
+              value: "changeit"
+            - name: SCHEMA_REGISTRY_SSL_KEYSTORE_LOCATION
+              value: "/etc/kafka/secrets/schema-registry.server.keystore.jks"
+            - name: SCHEMA_REGISTRY_SSL_TRUSTSTORE_PASSWORD
+              value:  "changeit"
+            - name: SCHEMA_REGISTRY_SSL_TRUSTSTORE_LOCATION
+              value: "/etc/kafka/secrets/schema-registry.server.truststore.jks"
+            - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+              value: "HTTPS"
+            - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD
+              value:  "changeit"
+            - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD
+              value: "changeit"
+            - name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+            - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION
+              value: "/etc/kafka/secrets/schema-registry.server.keystore.jks"
+            - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD
+              value: "changeit"
+            - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION
+              value: "/etc/kafka/secrets/schema-registry.server.truststore.jks"
+            - name: SCHEMA_REGISTRY_KAFKASTORE_SASL_MECHANISM
+              value: "PLAIN"
+            #- name: SCHEMA_REGISTRY_KAFKASTORE_SASL_JAAS_CONFIG
+            #  value: 'org.apache.kafka.common.security.plain.PlainLoginModule required username=\"schema-registry\" password=\"schema-registry-secret\";'
+            #- name: SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL
+            #  value: "SASL_SSL"
+            - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+              value: PLAINTEXT://kafka:9094
+            - name: KAFKA_LOG4J_ROOT_LOGLEVEL
+              value: "ERROR"
+            - name: SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL
+              value: "ERROR"
+            #- name: KAFKA_LOG4J_ROOT_LOGLEVEL
+            #  value: "TRACE"
+            #- name: KAFKA_LOG4J_LOGGERS
+            #  value: "org.apache.zookeeper=TRACE,org.apache.kafka=TRACE, kafka=TRACE, kafka.cluster=TRACE,kafka.controller=TRACE, kafka.coordinator=TRACE,kafka.log=TRACE,kafka.server=TRACE,kafka.zookeeper=TRACE,state.change.logger=TRACE"
+            - name: SCHEMA_REGISTRY_LISTENERS
+              value: http://0.0.0.0:8083, https://0.0.0.0:8081
+            - name: SCHEMA_REGISTRY_AUTHENTICATION_METHOD
+              value: BASIC
+            - name: SCHEMA_REGISTRY_AUTHENTICATION_ROLES
+              value: Testers
+            - name: SCHEMA_REGISTRY_AUTHENTICATION_REALM
+              value: SchemaRegistry
+            - name: SCHEMA_REGISTRY_OPTS
+              value: -Djava.security.auth.login.config=/etc/schema-registry/auth/jaas_config.conf
+            - name: SCHEMA_REGISTRY_SSL_TRUSTSTORE_TYPE
+              value : JKS
+            - name: SCHEMA_REGISTRY_SSL_KEYSTORE_TYPE
+              value : JKS
+          ports:
+            - containerPort: 8081
+            - containerPort: 8083
+          volumeMounts:
+            - mountPath: /etc/kafka/secrets/cert_creds
+              name: cert-creds
+              subPath: cert_creds
+            - mountPath: /etc/kafka/secrets/schema-registry.server.keystore.jks
+              name: ssl-secrets-schema-registry
+              subPath: schema-registry.server.keystore.jks
+            - mountPath: /etc/kafka/secrets/schema-registry.server.truststore.jks
+              name: ssl-secrets-schema-registry
+              subPath: schema-registry.server.truststore.jks
+            - name: auth-config
+              mountPath: /etc/schema-registry/auth
+              readOnly: true
