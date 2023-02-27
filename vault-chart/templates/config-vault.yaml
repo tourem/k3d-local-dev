@@ -1,0 +1,184 @@
+ {{- if or (.Values.server.configDatabase.mongo) (.Values.server.configDatabase.pg) }}
+apiVersion: v1
+data: 
+  admin_policy.hcl: |
+      # cos
+      path "objsto/*" {
+        capabilities = ["list"]
+      }
+      path "objsto/data/co002i004242" {
+        capabilities = ["read"]
+      }
+      
+      # kafka
+      path "ibmsid/+/+/si002i000424" {
+        capabilities = ["read"]
+      }
+      
+      # app
+      path "secret/data/ap42424/local/*" {
+        capabilities = ["read"]
+      }
+      path "secret/metadata/ap42424/local/*" {
+        capabilities = ["list"]
+      }
+      
+      # dev
+      path "secret/*" {
+        capabilities = ["list"]
+       }
+       path "secret/metadata/*" {
+        capabilities = ["list", "read", "delete"]
+       }
+      path "secret/data/+/local/*" {
+        capabilities = ["read", "update", "create", "delete"]
+       }
+       path "secret/delete/+/local/*" {
+        capabilities = ["update"]
+       }
+       path "secret/undelete/+/local/*" {
+        capabilities = ["update"]
+       }
+       path "secret/destroy/+/local/*" {
+        capabilities = ["update"]
+       }
+      
+       # mongodb
+       path "database/mongodb/mg002i000424/static-creds/own-mg002i000424-local-mongo" {
+        capabilities = ["read"]
+      }
+      path "database/mongodb/mg002i000424/creds/own-mg002i000424-local-mongo" {
+        capabilities = ["read"]
+      }
+      
+      # postgres
+      path "database/postgres/pg002i000424/static-creds/own_pg002i000424_postgres_local_postgres" {
+        capabilities = ["read"]
+      }
+      path "database/postgres/pg002i000424/creds/own_pg002i000424_postgres_local_postgres" {
+        capabilities = ["read"]
+      }
+      
+      path "sys/revoke"{
+        capabilities = ["update"]
+      }
+      path "sys/leases/revoke"{
+        capabilities = ["update"]
+      }
+
+  mongo_creation_own.json: |
+       {
+          "db": "admin",
+          "roles":[
+              { "role": "dbAdmin", "db":"local-mongo"},
+              { "role": "readWrite", "db":"local-mongo"}
+          ]
+       }
+       
+  basic-role-config.sh: |
+      #!/usr/bin/env sh
+
+      retVal=1
+      while [ $retVal -eq 1 ]
+      do
+          sleep 20
+          echo "########### vault status ########### "
+          vault status
+          retVal=$?
+      done
+
+      echo "########### vault status ok ########### "
+
+      create_empty_secret_applis(){
+        local PATH_SECRET=${1}
+        echo "vault kv put $PATH_SECRET client.ssl.key-store-password=\"\" client.ssl.trust-store-password=\"changeit\" "
+        vault kv put "$PATH_SECRET" client.ssl.key-store-password="" client.ssl.trust-store-password="changeit"
+      }
+      
+      create_empty_secret_certificats(){
+        local PATH_SECRET=${1}
+        echo "vault kv put $PATH_SECRET keystore_jks=\"\""
+        vault kv put "$PATH_SECRET" keystore_jks="" 
+      }
+      
+      # 2) Export de variables d'env utilisées (à faie dans le container ! comme toutes les commandes qui suivent)
+      export DEFAULT_TTL="30m"
+      export DEFAULT_TOKEN_TTL="100h"
+      export MAX_TTL="768h"
+       
+      # 3) login vault avec root_token du fichier des clés(voir la doc vault) : ici mon root_token = s.vAdIzIuUUCpUV3WrhBgYfqB7
+      vault login root
+      
+      create_empty_secret_applis "secret/ap42424/local/app-local/applis"  
+      create_empty_secret_certificats "secret/ap42424/local/app-local/certificats"
+
+      echo "########### put secrets in  secret/ap42424/local/app-local/applis ########### "
+      {{- range $.Values.server.secrets }}
+      echo {{ .name }}+" ====================== "+{{ .value }}
+      vault kv patch secret/ap42424/local/app-local/applis {{ .name }}={{ .value }}
+      {{- end }}
+
+      vault secrets enable  -path=objsto -version=2 kv
+      vault secrets enable  -path=ibmsid -version=2 kv
+      
+      vault kv put objsto/co002i001618 apikey="apikey"
+      vault kv put objsto/co002i001618 resource_instance_id="resource_instance_id"
+      vault kv put objsto/co002i001618 cos_hmac_keys_access_key_id="accessKey"
+      vault kv put objsto/co002i001618 cos_hmac_keys_secret_access_key="secretKey"
+      
+      vault kv put ibmsid/2306508/si002i000181 api_key="api_key"
+      
+      vault auth enable -path=kubernetes_ku002i000424 kubernetes
+      
+      # 5) In the next step, we are going to configure the Kubernetes authentication method. We need to set the location of the Kubernetes
+      # API, the service account token, its certificate, and the name of the
+      # Kubernetes service account issuer (required for Kubernetes 1.21+).
+      vault write auth/kubernetes_ku002i000424/config \
+          kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
+          token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+          kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+          issuer="https://kubernetes.default.svc.cluster.local"
+ 
+      
+      # create the admin policy in vault
+      vault policy write local-vault-policy /tmp/admin_policy.hcl
+      
+      # 7) We need to create a Vault role for the Kubernetes authentication method.
+      # In this role, we set the name and location of the Kubernetes ServiceAccoun(* = all) and the Vault policy created in the previous step(internal-app).
+      vault write auth/kubernetes_ku002i000424/role/internal-app \
+          bound_service_account_names=* \
+          bound_service_account_namespaces=* \
+          policies=local-vault-policy \
+          ttl=${DEFAULT_TOKEN_TTL}
+      
+       echo "########### config database ########### "
+
+      {{- if .Values.server.configDatabase.mongo }}
+       vault secrets enable -path=database/mongodb/mg002i000424 database
+       # 9) We need to configure a plugin for the MongoDB database and then provide connection settings and credentials
+       echo "########### connection mongo config database ########### "
+       vault write database/mongodb/mg002i000424/config/mg002i000424 plugin_name=mongodb-database-plugin allowed_roles="own-mg002i000424-local-mongo" connection_url="mongodb://{{ "{{" }}username{{ "}}" }}:{{ "{{" }}password{{ "}}" }}@mongodb-service-internal.default:27017/admin?ssl=false&authSource=admin&directConnection=true" username="admin" password="password"
+    
+       # 10) Create role from mongo_creation_own.json file
+       vault write database/mongodb/mg002i000424/roles/own-mg002i000424-local-mongo db_name=mg002i000424 creation_statements=@/tmp/mongo_creation_own.json revocation_statements="" default_ttl=${DEFAULT_TTL} max_ttl=${MAX_TTL}
+       vault read database/mongodb/mg002i000424/creds/own-mg002i000424-local-mongo
+      {{- end }}
+
+      {{- if .Values.server.configDatabase.pg }}
+       vault secrets enable -path=database/postgres/pg002i000424 database
+       vault write database/postgres/pg002i000424/config/pg002i000424 plugin_name=postgresql-database-plugin allowed_roles="own_pg002i000424_postgres_local_postgres" connection_url="postgresql://{{ "{{" }}username{{ "}}" }}:{{ "{{" }}password{{ "}}" }}@pg-postgresql.default:5432?sslmode=disable" username="postgres" password="postgres" lease=4m lease_max=24h
+       vault write database/postgres/pg002i000424/roles/own_pg002i000424_postgres_local_postgres db_name=pg002i000424 creation_statements="CREATE SCHEMA IF NOT EXISTS local_postgres; CREATE ROLE \"{{ "{{" }}name{{ "}}" }}\" WITH LOGIN CREATEDB PASSWORD '{{ "{{" }}password{{ "}}" }}'; ALTER ROLE \"{{ "{{" }}name{{ "}}" }}\"  SET search_path TO \"local_postgres\"; GRANT ALL ON DATABASE postgres TO \"{{ "{{" }}name{{ "}}" }}\"; GRANT ALL ON SCHEMA local_postgres TO \"{{ "{{" }}name{{ "}}" }}\"; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA local_postgres TO \"{{ "{{" }}name{{ "}}" }}\"; ALTER DEFAULT PRIVILEGES IN SCHEMA local_postgres GRANT ALL ON TABLES TO \"{{ "{{" }}name{{ "}}" }}\" ; ALTER DEFAULT PRIVILEGES IN SCHEMA local_postgres GRANT ALL ON SEQUENCES TO \"{{ "{{" }}name{{ "}}" }}\" ; ALTER DEFAULT PRIVILEGES IN SCHEMA local_postgres GRANT ALL ON FUNCTIONS TO \"{{ "{{" }}name{{ "}}" }}\" ; ALTER DEFAULT PRIVILEGES IN SCHEMA local_postgres GRANT ALL ON TYPES TO \"{{ "{{" }}name{{ "}}" }}\" ;" default_ttl=${DEFAULT_TTL} max_ttl=${MAX_TTL}
+       vault read database/postgres/pg002i000424/creds/own_pg002i000424_postgres_local_postgres
+      {{- end }}
+      
+      vault status
+      
+      echo 'Finished Vault Role/Policy Configuration with mongodb'
+      tail -f /dev/null
+      
+kind: ConfigMap
+metadata: 
+  creationTimestamp: "2022-11-22T07:52:22Z"
+  name: config-vault
+--- 
+{{- end }}
