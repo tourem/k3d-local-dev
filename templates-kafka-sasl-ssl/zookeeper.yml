@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: kafka
+  labels:
+    app: zookeeper
+    tier: backend
+    role: kafka
+spec:
+  selector:
+    app: zookeeper
+    tier: backend
+    role: kafka
+  ports:
+    - port: 2181
+      targetPort: 2181
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  namespace: kafka
+spec:
+  selector:
+    matchLabels:
+      app: zookeeper
+      tier: backend
+      role: kafka
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+        tier: backend
+        role: kafka
+    spec:
+      containers:
+        - name: zookeeper
+          image: k3d-dev-app-registry:5050/confluentinc/cp-zookeeper:7.1.0
+          env:
+            #- name: KAFKA_OPTS
+            #  value: -Djava.security.auth.login.config=/etc/kafka/secrets/zookeeper_jaas.conf -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider -DrequireClientAuthScheme=sasl -Dzookeeper.quorum.auth.enableSasl=true -Dzookeeper.quorum.auth.learnerRequireSasl=true -Dzookeeper.quorum.auth.serverRequireSasl=true -Dzookeeper.quorum.auth.learner.loginContext=QuorumLearner -Dzookeeper.quorum.auth.server.loginContext=QuorumServer -Dzookeeper.quorum.cnxn.threads.size=20 -Dzookeeper.requireClientAuthScheme=sasl -Dzookeeper.authProvider.2=org.apache.zookeeper.server.auth.DigestAuthenticationProvider -Dquorum.auth.enableSasl=true -Dquorum.auth.learnerRequireSasl=true 
+            - name: ALLOW_ANONYMOUS_LOGIN
+              value: "yes"
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+            - name: ZOOKEEPER_LOG4J_ROOT_LOGLEVEL
+              value: "ERROR"
+          ports:
+            - containerPort: 2181
+
