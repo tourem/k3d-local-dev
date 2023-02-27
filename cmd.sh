@@ -21,3 +21,5 @@ KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token);
 VAULT_K8S_LOGIN=$(curl -k -X POST -H "X-Vault-Namespace: $NAMESPACE_VAULT" -H "X-Vault-Request: true" -d '{"jwt": "'"$KUBE_TOKEN"'", "role": "'"$ROLE"'"}' https://vault.host/v1/auth/kubernetes_$CLUSTER/login);
 X_VAULT_TOKEN=$(echo $VAULT_K8S_LOGIN | grep -Eo '"auth"[^,]*' |  grep -Eo '"client_token"[^,]*'  | grep -Eo '[^:]*$' | tr -d '"'); 
 # récupération de secrets associés au cos : access key, secret key ...
+
+ --namespace ingress-nginx --create-namespace

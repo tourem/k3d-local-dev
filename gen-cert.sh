@@ -413,7 +413,7 @@ keytool \
 echo "=> Clean up"
 
 echo " => Move files"
-kubectl create secret generic ssl-cert \
+kubectl create secret generic ssl-cert -n kafka \
 --save-config \
 --dry-run=client \
 --from-file=./kafka.server.keystore.jks \
@@ -426,4 +426,10 @@ kubectl create secret generic ssl-cert \
 --from-file=./akhq.keystore.jks \
 --from-file=./control-center.server.truststore.jks \
 --from-file=./control-center.server.keystore.jks \
--o yaml > ssl-cert-secrets.yaml 
+-o yaml > templates-kafka-sasl-ssl/secret.yaml
+
+rm *.jks
+rm *.pem
+rm *.csr
+rm credentials
+

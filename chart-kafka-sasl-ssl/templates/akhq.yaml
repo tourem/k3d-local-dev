@@ -1,0 +1,103 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: akhq-svc
+  namespace: kafka
+  labels:
+    app: akhq
+spec:
+  type: LoadBalancer
+  ports:
+    - name: akhq
+      port: 8090
+      protocol: TCP
+      targetPort: 8090
+      nodePort: 30040
+  selector:
+    app: akhq
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: akhq-dpl
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: akhq
+  template:
+    metadata:
+      labels:
+        app: akhq
+    spec:
+      containers:
+        - name: akhq
+          image: tchiotludo/akhq:0.23.0
+          env:
+            #- name: KAFKA_OPTS
+            #  value: -Djava.security.auth.login.config=/etc/kafka/secrets/zookeeper_jaas.conf -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider -DrequireClientAuthScheme=sasl -Dzookeeper.quorum.auth.enableSasl=true -Dzookeeper.quorum.auth.learnerRequireSasl=true -Dzookeeper.quorum.auth.serverRequireSasl=true -Dzookeeper.quorum.auth.learner.loginContext=QuorumLearner -Dzookeeper.quorum.auth.server.loginContext=QuorumServer -Dzookeeper.quorum.cnxn.threads.size=20 -Dzookeeper.requireClientAuthScheme=sasl -Dzookeeper.authProvider.2=org.apache.zookeeper.server.auth.DigestAuthenticationProvider -Dquorum.auth.enableSasl=true -Dquorum.auth.learnerRequireSasl=true 
+            - name: AKHQ_CONFIGURATION
+              value: |
+                micronaut:
+                  server:
+                    port: 8090
+                akhq:
+                  connections:
+                    docker-kafka-server:
+                      properties:
+                        bootstrap.servers: "kafka:9092"
+                        ssl.truststore.location: /app/ssl/akhq.truststore.jks
+                        ssl.truststore.password: changeit
+                        #ssl.keystore.location: /app/ssl/akhq.keystore.jks
+                        #ssl.keystore.password: changeit
+                        #ssl.key.password: changeit
+                        security.protocol: SASL_SSL
+                        sasl.mechanism: PLAIN
+                        ssl.protocol: TLSv1.2
+                        ssl.endpoint.identification.algorithm:
+                        sasl.jaas.config: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"client\" password=\"client-secret\";"
+                      schema-registry:
+                        url: "https://schema-registry:8081"
+                        basicAuthUsername: ckp_tester
+                        basicAuthPassword: test_secret
+                        properties:
+                          schema.registry.ssl.truststore.location: /app/ssl/akhq.truststore.jks
+                          schema.registry.ssl.truststore.password: changeit
+                          schema.registry.ssl.keystore.location: /app/ssl/akhq.keystore.jks
+                          schema.registry.ssl.keystore.password: changeit
+                          schema.registry.ssl.key.password: changeit
+                          schema.registry.basic.auth.credentials.source: USER_INFO
+                          schema.registry.basic.auth.user.info: ckp_tester:test_secret
+                          security.protocol: SASL_SSL
+                          sasl.mechanism: PLAIN
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          volumeMounts:
+            #- name: akhq-config
+            #  mountPath: /app/application.yml
+            #  subPath: application.yml
+            - mountPath: /app/ssl/akhq.truststore.jks
+              name: ssl-secrets-kafka
+              subPath: akhq.truststore.jks
+            - mountPath: /app/ssl/akhq.keystore.jks
+              name: ssl-secrets-kafka
+              subPath: akhq.keystore.jks
+      volumes:
+        - name: ssl-secrets-kafka
+          secret:
+            secretName: ssl-cert
+            items:
+            - key: akhq.truststore.jks
+              path: akhq.truststore.jks
+            - key: akhq.keystore.jks
+              path: akhq.keystore.jks
+       # - name: akhq-config
+       #   configMap:
+       #     name: akhq-config
+       #     items:
+       #       - key: application.yml
+       #         path: application.yml

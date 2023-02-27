@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaas-conf
+  namespace: kafka
+data:
+  cert_creds: changeit
+  broker_jaas.conf: |+
+    KafkaServer {
+      org.apache.kafka.common.security.plain.PlainLoginModule required
+      username="broker"
+      password="broker-secret"
+      user_broker="broker-secret"
+      user_client="client-secret"
+      user_schema-registry="schema-registry-secret"
+      user_gemstone="gemstone-secret";
+    };
+
+  jaas_config.conf: |+
+    SchemaRegistry {
+     org.eclipse.jetty.jaas.spi.PropertyFileLoginModule required
+     file="/etc/schema-registry/auth/login.properties";
+    };
+
+  login.properties: |
+    ckp_tester=MD5:e989d46fdbc1c376c19a43aaf85227a4, Testers

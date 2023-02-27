@@ -41,12 +41,6 @@ spec:
               path: jaas_config.conf
             - key: login.properties
               path: login.properties
-        - name: broker-jaas-conf
-          configMap:
-            name: jaas-conf
-            items:
-            - key: sr_jaas.conf
-              path: sr_jaas.conf
         - name: cert-creds
           configMap:
             name: jaas-conf
@@ -63,7 +57,7 @@ spec:
               path: schema-registry.server.truststore.jks
       containers:
         - name: schema-registry
-          image: k3d-dev-app-registry:5050/confluentinc/cp-schema-registry:6.2.0
+          image: confluentinc/cp-schema-registry:6.2.0
           env:
             - name: SCHEMA_REGISTRY_HOST_NAME
               value: schema-registry
