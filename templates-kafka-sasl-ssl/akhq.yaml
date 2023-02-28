@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
         - name: akhq
-          image: tchiotludo/akhq:0.23.0
+          image: k3d-dev-app-registry:5050/tchiotludo/akhq:0.23.0
           env:
             #- name: KAFKA_OPTS
             #  value: -Djava.security.auth.login.config=/etc/kafka/secrets/zookeeper_jaas.conf -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider -DrequireClientAuthScheme=sasl -Dzookeeper.quorum.auth.enableSasl=true -Dzookeeper.quorum.auth.learnerRequireSasl=true -Dzookeeper.quorum.auth.serverRequireSasl=true -Dzookeeper.quorum.auth.learner.loginContext=QuorumLearner -Dzookeeper.quorum.auth.server.loginContext=QuorumServer -Dzookeeper.quorum.cnxn.threads.size=20 -Dzookeeper.requireClientAuthScheme=sasl -Dzookeeper.authProvider.2=org.apache.zookeeper.server.auth.DigestAuthenticationProvider -Dquorum.auth.enableSasl=true -Dquorum.auth.learnerRequireSasl=true 
