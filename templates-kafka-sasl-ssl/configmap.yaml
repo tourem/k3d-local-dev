@@ -13,6 +13,7 @@ data:
       user_broker="broker-secret"
       user_client="client-secret"
       user_schema-registry="schema-registry-secret"
+      user_ckp_tester="test_secret"
       user_gemstone="gemstone-secret";
     };
 

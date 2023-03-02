@@ -13,7 +13,7 @@ spec:
       port: 8090
       protocol: TCP
       targetPort: 8090
-      nodePort: 30040
+      nodePort: 30030
   selector:
     app: akhq
 ---

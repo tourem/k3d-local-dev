@@ -1,0 +1,40 @@
+spring:
+    application:
+        name: schema-registry-demo-service
+    
+springdoc:
+    api-docs.enabled: true
+    swagger-ui:
+        path: documentation
+        enabled: true
+        operationsSorter: method
+        tryItOutEnabled: true
+        filter: true
+        tagsSorter: alpha
+server:
+    port: 9001
+kafkademo:
+    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+    schema-registry-url: ${SCHEMA_REGISTRY_URL}
+    inbound-topic: "send-payment"
+    outbound-topic: "payment-sent"
+    ssl:
+        key-store-location: ${APP_SSL_KEYSTORE_LOCATION}
+        key-store-password: ${APP_SSL_KEYSTORE_PASSWORD}
+        key-password: ${APP_SSL_KEY_PASSWORD}
+        trust-store-location:  ${APP_SSL_TRUSTSTORE_LOCATION}
+        trust-store-password: ${APP_SSL_TRUSTSTORE_PASSWORD}
+    additional-config:
+        #basic.auth.credentials.source: "URL"
+        sasl.jaas.config: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="${USER_SASL_NAME}" password="${PASSWORD_SASL}";'
+        security.protocol: "SASL_SSL"
+        sasl.mechanism: "PLAIN"
+        ssl.endpoint.identification.algorithm:
+        basic.auth.credentials.source: USER_INFO
+        basic.auth.user.info: ${USER_SASL_NAME}:${PASSWORD_SASL}
+        schema.registry.ssl.keystore.password: ${APP_SSL_KEYSTORE_PASSWORD}
+        schema.registry.ssl.keystore.location: ${APP_SSL_KEYSTORE_LOCATION}
+        schema.registry.ssl.truststore.location: ${APP_SSL_TRUSTSTORE_LOCATION}
+        schema.registry.ssl.truststore.password: ${APP_SSL_TRUSTSTORE_PASSWORD}
+        schema.registry.ssl.key.password: ${APP_SSL_KEY_PASSWORD}
+

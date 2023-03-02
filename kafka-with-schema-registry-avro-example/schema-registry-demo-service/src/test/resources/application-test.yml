@@ -1,0 +1,3 @@
+kafkademo:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    schema.registry.url: http://localhost:${wiremock.server.port}/

@@ -10,7 +10,8 @@ helm pull my-repo/mongodb  --version 11.2.0 --untar
 
 
 winpty kubectl exec -i -t schema-registry-64f5dcb4bd-w22jm "--" sh -c "clear; (bash || ash || sh)"
-kubectl exec -ti $(kubectl get pods --selector "app=poc-api-postgres" --output=name) -c ap26553-rds-poc-postgres-dev-stable -- env "TERM=xterm bash" sh -c "clear; (bash || ash || sh)"
+kubectl exec -ti $(kubectl get pods --selector "io.kompose.service=application-client" --output=name -n  kafka) -c ap26553-rds-poc-postgres-dev-stable -- env "TERM=xterm bash" sh -c "clear; (bash || ash || sh)"
+kubectl exec -ti $(kubectl get pods --selector "io.kompose.service=application-client" --output=name -n  kafka) -- sh -c "clear; (bash || ash || sh)"
 
 export NAMESPACE_VAULT=/
 export CLUSTER=k8s

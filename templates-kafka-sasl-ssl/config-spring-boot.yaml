@@ -1,5 +1,0 @@
-   additional-config:
-    "basic.auth.credentials.source": "URL"
-    "sasl.jaas.config": 'org.apache.kafka.common.security.plain.PlainLoginModule required username="token" password="${api_key}";'
-    "security.protocol": "SASL_SSL"
-    "sasl.mechanism": "PLAIN"
