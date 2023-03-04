@@ -195,6 +195,56 @@
 					<goal>register</goal>
 				</goals>
 			</plugin>
+			<plugin>
+				<groupId>org.openrewrite.maven</groupId>
+				<artifactId>rewrite-maven-plugin</artifactId>
+				<version>4.41.0</version>
+				<configuration>
+					<activeRecipes>
+						<recipe>org.openrewrite.java.testing.junit5.JUnit5BestPractices</recipe>
+						<recipe>org.openrewrite.java.RemoveUnusedImports</recipe>
+						<recipe>org.openrewrite.java.OrderImports</recipe>
+						<recipe>org.openrewrite.java.format.EmptyNewlineAtEndOfFile</recipe>
+						<recipe>org.openrewrite.java.cleanup.DefaultComesLast</recipe>
+						<recipe>org.openrewrite.java.cleanup.EmptyBlock</recipe>
+						<recipe>org.openrewrite.java.cleanup.ForLoopControlVariablePostfixOperators</recipe>
+						<recipe>org.openrewrite.java.cleanup.MethodParamPad</recipe>
+						<recipe>org.openrewrite.java.cleanup.NoWhitespaceAfter</recipe>
+						<recipe>org.openrewrite.java.cleanup.NoWhitespaceBefore</recipe>
+						<recipe>org.openrewrite.java.cleanup.PadEmptyForLoopComponents</recipe>
+						<recipe>org.openrewrite.java.cleanup.TypecastParenPad</recipe>
+						<recipe>org.openrewrite.java.cleanup.EqualsAvoidsNull</recipe>
+						<recipe>org.openrewrite.java.cleanup.ExplicitInitialization</recipe>
+						<recipe>org.openrewrite.java.cleanup.FallThrough</recipe>
+						<recipe>org.openrewrite.java.cleanup.HideUtilityClassConstructor</recipe>
+						<recipe>org.openrewrite.java.cleanup.OperatorWrap</recipe>
+						<recipe>org.openrewrite.java.cleanup.UnnecessaryParentheses</recipe>
+					</activeRecipes>
+				</configuration>
+				<dependencies>
+					<!-- https://mvnrepository.com/artifact/org.openrewrite.recipe/rewrite-testing-frameworks -->
+					<dependency>
+						<groupId>org.openrewrite.recipe</groupId>
+						<artifactId>rewrite-testing-frameworks</artifactId>
+						<version>1.34.0</version>
+						<scope>runtime</scope>
+					</dependency>
+					<!-- https://mvnrepository.com/artifact/org.openrewrite.recipe/rewrite-java-security -->
+					<dependency>
+						<groupId>org.openrewrite.recipe</groupId>
+						<artifactId>rewrite-java-security</artifactId>
+						<version>1.22.0</version>
+					</dependency>
+
+					<!-- https://mvnrepository.com/artifact/org.openrewrite.recipe/rewrite-spring -->
+					<dependency>
+						<groupId>org.openrewrite.recipe</groupId>
+						<artifactId>rewrite-spring</artifactId>
+						<version>4.33.0</version>
+					</dependency>
+
+				</dependencies>
+			</plugin>
 		</plugins>
 	</build>
 </project>
