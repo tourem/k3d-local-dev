@@ -242,3 +242,9 @@ Further docker clean up if network issues:
 ```
 docker network prune
 ```
+
+Use openRewrite
+```
+./mvnw rewrite:dryRun
+./mvnw rewrite:run
+```
