@@ -85,7 +85,7 @@ echo " => Generate the private keys (for the server)"
 keytool \
 	-genkeypair \
 	-alias kafka-server \
-	-dname "CN=kafka, O=Home, OU=Home, L=Campinas, C=BR" \
+	-dname "CN=kafka.kafka.svc.cluster.local, O=Home, OU=Home, L=Campinas, C=BR" \
 	-validity 3650 \
 	-keyalg RSA \
 	-keysize 4096 \
@@ -111,7 +111,7 @@ keytool \
 	-gencert \
 	-alias ca \
 	-ext ku:c=dig,keyEnc \
-	-ext "san=dns:kafka,dns:broker,dns:localhost" \
+	-ext "san=dns:kafka.kafka.svc.cluster.local,dns:broker,dns:localhost" \
 	-ext eku=sa,ca \
 	-rfc \
 	-infile kafka-server.csr \
@@ -152,7 +152,7 @@ echo " => Generate the private keys (for schema-registry-server)"
 keytool \
 	-genkeypair \
 	-alias schema-registry-server \
-	-dname "CN=schema-registry, O=Home, OU=Home, L=Campinas, C=BR" \
+	-dname "CN=schema-registry.kafka.svc.cluster.local, O=Home, OU=Home, L=Campinas, C=BR" \
 	-validity 3650 \
 	-keyalg RSA \
 	-keysize 4096 \
@@ -178,7 +178,7 @@ keytool \
 	-gencert \
 	-alias ca \
 	-ext ku:c=dig,keyEnc \
-	-ext "san=dns:schema-registry,dns:schema,dns:localhost" \
+	-ext "san=dns:schema-registry.kafka.svc.cluster.local,dns:schema,dns:localhost" \
 	-ext eku=sa,ca \
 	-rfc \
 	-infile schema-registry-server.csr \
@@ -422,11 +422,16 @@ kubectl create secret generic ssl-cert -n kafka \
 --from-file=./application.client.truststore.jks \
 --from-file=./schema-registry.server.truststore.jks \
 --from-file=./schema-registry.server.keystore.jks \
---from-file=./akhq.truststore.jks \
---from-file=./akhq.keystore.jks \
 --from-file=./control-center.server.truststore.jks \
 --from-file=./control-center.server.keystore.jks \
 -o yaml > templates-kafka-sasl-ssl/secret.yaml
+
+kubectl create secret generic ssl-cert-akhq \
+--save-config \
+--dry-run=client \
+--from-file=./akhq.truststore.jks \
+--from-file=./akhq.keystore.jks \
+-o yaml > templates-kafka-sasl-ssl/secret-akhq.yaml
 
 rm *.jks
 rm *.pem
